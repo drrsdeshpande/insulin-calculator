@@ -1,0 +1,1 @@
+This is a simple web application designed for bedside nurses to calculate insulin infusion titration based on the NICE-SUGAR protocol. The goal is to ensure safe and effective glycemic control in critically ill patients.
