@@ -86,6 +86,8 @@
             align-items: center;
             justify-content: center;
             z-index: 50;
+            overflow-y: auto;
+            padding: 1rem;
         }
         .modal-box {
             background-color: white;
@@ -93,13 +95,12 @@
             border-radius: 0.75rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             width: 90%;
-            max-width: 400px;
+            max-width: 600px;
             text-align: center;
         }
         .modal-title {
             font-size: 1.25rem;
             font-weight: 600;
-            color: #B91C1C; /* Red-700 */
         }
         .modal-body {
             margin-top: 1rem;
@@ -107,10 +108,26 @@
             color: #4B5563;
         }
         .btn-danger {
-            background-color: #DC2626; /* Red-600 */
+            background-color: #DC2626;
         }
         .btn-danger:hover {
-            background-color: #B91C1C; /* Red-700 */
+            background-color: #B91C1C;
+        }
+        .guideline-table {
+            width: 100%;
+            margin-top: 1rem;
+            text-align: left;
+            border-collapse: collapse;
+        }
+        .guideline-table th, .guideline-table td {
+            border: 1px solid #E5E7EB;
+            padding: 0.75rem;
+        }
+        .guideline-table th {
+            background-color: #F3F4F6;
+        }
+        .guideline-table tr:nth-child(even) {
+            background-color: #F9FAFB;
         }
     </style>
 </head>
@@ -121,10 +138,14 @@
             <h1 class="text-3xl font-bold text-gray-800">Insulin Titration Calculator</h1>
             <p class="text-gray-600 mt-2">Based on NICE-SUGAR Protocol</p>
         </header>
+        
+        <div class="text-center mb-4">
+            <button id="viewGuidelinesBtn" class="text-blue-600 hover:text-blue-800 font-semibold">View Guidelines</button>
+        </div>
+
 
         <!-- Input Card -->
         <div class="card">
-            <!-- Form fields remain the same -->
              <div class="mb-4">
                 <label class="checkbox-label">
                     <input type="checkbox" id="initiateInfusion" class="checkbox">
@@ -157,7 +178,6 @@
 
         <!-- Output Card -->
         <div id="result-container" class="hidden">
-            <!-- Output display remains the same -->
             <div id="result-card" class="card">
                  <div id="bolus-section" class="hidden border-b-2 border-dashed border-gray-300 mb-4 pb-4">
                     <h4 class="text-lg font-semibold text-purple-800">Recommended IV Bolus</h4>
@@ -175,7 +195,6 @@
 
         <!-- Footer Information -->
         <footer class="text-center text-xs text-gray-500 mt-4 px-4">
-            <!-- Footer content remains the same -->
             <p class="mb-2"><span class="font-bold">Disclaimer:</span> This tool is for informational purposes and is not a substitute for clinical judgment and institutional protocols. All calculations must be verified by a qualified healthcare professional.</p>
             <p class="font-semibold text-gray-600">Developed by: Dr. Raghavendra Deshpande</p>
             <p class="text-gray-600">ICU Consultant, Critical Care Medicine, Manipal Hospitals Sarjapur Road</p>
@@ -185,11 +204,52 @@
     <!-- Custom Alert Modal -->
     <div id="alertModal" class="modal-overlay hidden">
         <div class="modal-box">
-            <h3 id="modalTitle" class="modal-title">Invalid Input</h3>
+            <h3 id="modalTitle" class="modal-title text-red-700">Invalid Input</h3>
             <p id="modalBody" class="modal-body">This is a warning message.</p>
             <button id="closeModalBtn" class="btn btn-danger">Acknowledge & Close</button>
         </div>
     </div>
+    
+    <!-- Guidelines Modal -->
+    <div id="guidelinesModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 class="modal-title text-gray-800">NICE-SUGAR Titration Guidelines</h3>
+            <div class="modal-body text-left">
+                <h4 class="font-semibold mt-4 mb-2 text-gray-700">Ongoing Infusion Titration (Target: 140-180 mg/dL)</h4>
+                <table class="guideline-table">
+                    <thead>
+                        <tr>
+                            <th>Blood Glucose (mg/dL)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-red-50"><td>&lt; 70</td><td><strong>STOP INFUSION.</strong> Treat for hypoglycemia per protocol.</td></tr>
+                        <tr class="bg-yellow-50"><td>70 - 109</td><td>Stop infusion. Recheck glucose in 1 hour.</td></tr>
+                        <tr><td>110 - 139</td><td>Decrease infusion rate by 50%.</td></tr>
+                        <tr class="bg-green-50"><td><strong>140 - 180</strong></td><td><strong>No change</strong> in infusion rate.</td></tr>
+                        <tr><td>181 - 250</td><td>Increase infusion rate by 1 U/hr.</td></tr>
+                        <tr><td>&gt; 250</td><td>Increase infusion rate by 2 U/hr.</td></tr>
+                    </tbody>
+                </table>
+                <h4 class="font-semibold mt-6 mb-2 text-gray-700">New Infusion Initiation</h4>
+                <table class="guideline-table">
+                     <thead>
+                        <tr>
+                            <th>Initial Glucose (mg/dL)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>&lt; 180</td><td>Do not start infusion. Monitor glucose.</td></tr>
+                        <tr><td>≥ 180</td><td>1. Bolus: (Glucose / 100) units.<br>2. Rate: Start at (Glucose / 100) U/hr.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <button id="closeGuidelinesBtn" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+
 
     <script>
         // --- DOM Element Selection ---
@@ -212,6 +272,10 @@
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const closeModalBtn = document.getElementById('closeModalBtn');
+        const guidelinesModal = document.getElementById('guidelinesModal');
+        const viewGuidelinesBtn = document.getElementById('viewGuidelinesBtn');
+        const closeGuidelinesBtn = document.getElementById('closeGuidelinesBtn');
+
 
         // --- Modal Functions ---
         function showModal(title, message) {
@@ -219,38 +283,41 @@
             modalBody.textContent = message;
             alertModal.classList.remove('hidden');
         }
-
         function hideModal() {
             alertModal.classList.add('hidden');
         }
+        function showGuidelines() {
+            guidelinesModal.classList.remove('hidden');
+        }
+        function hideGuidelines() {
+            guidelinesModal.classList.add('hidden');
+        }
+
 
         // --- Event Listeners ---
         calculateBtn.addEventListener('click', handleCalculation);
         resetBtn.addEventListener('click', handleReset);
         closeModalBtn.addEventListener('click', hideModal);
+        viewGuidelinesBtn.addEventListener('click', showGuidelines);
+        closeGuidelinesBtn.addEventListener('click', hideGuidelines);
+
         initiateInfusionEl.addEventListener('change', (e) => {
             currentRateEl.value = e.target.checked ? '0' : '';
             currentRateEl.disabled = e.target.checked;
         });
 
-        /**
-         * Main function to handle the calculation process.
-         */
         function handleCalculation() {
             const isInitiation = initiateInfusionEl.checked;
             const currentGlucose = parseFloat(currentGlucoseEl.value);
             let currentRate = parseFloat(currentRateEl.value);
 
-            // Updated validation using the custom modal
             if (isNaN(currentGlucose) || currentGlucose < 30) {
                 showModal("Critically Low Value", "Glucose value is critically low or invalid. Please re-check the reading and enter a value of 30 mg/dL or higher.");
                 return;
             }
-            
             if (isInitiation) {
                 currentRate = 0;
             }
-            
             if (isNaN(currentRate) || currentRate < 0) {
                 showModal("Invalid Input", "Please enter a valid, non-negative Current Infusion Rate.");
                 return;
@@ -260,11 +327,7 @@
             displayResult(result, currentRate);
         }
 
-        /**
-         * Resets all input fields and hides the result card.
-         */
         function handleReset() {
-            // Reset logic remains the same
             initiateInfusionEl.checked = false;
             currentGlucoseEl.value = '';
             currentRateEl.value = '';
@@ -274,16 +337,12 @@
             resultContainer.classList.add('hidden');
         }
 
-        /**
-         * Calculates the new insulin rate and bolus (if applicable).
-         */
         function calculateTitration(glucose, rate, isInitiation) {
-            // Calculation logic remains the same
              if (isInitiation) {
                 if (glucose < 180) {
                      return { bolus: 0, newRate: 0, status: 'Initiation: Below Threshold' };
                 }
-                const initialDose = Math.round((glucose / 100) * 2) / 2; // Round to nearest 0.5
+                const initialDose = Math.round((glucose / 100) * 2) / 2;
                 return { bolus: initialDose, newRate: initialDose, status: 'Initiation' };
             }
 
@@ -303,11 +362,7 @@
             }
         }
         
-        /**
-         * Displays the calculated result in the UI.
-         */
         function displayResult(result, oldRate) {
-             // Display logic remains the same
              const change = result.newRate - oldRate;
             
             if (result.bolus !== undefined && result.bolus > 0) {
