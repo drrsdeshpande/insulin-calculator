@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insulin Infusion Titration Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4B5563; /* Gray-600 */
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #D1D5DB; /* Gray-300 */
+            border-radius: 0.5rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3B82F6; /* Blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: none;
+        }
+        .btn-primary {
+            background-color: #2563EB; /* Blue-600 */
+        }
+        .btn-primary:hover {
+            background-color: #1D4ED8; /* Blue-700 */
+        }
+        .btn-secondary {
+            background-color: #6B7280; /* Gray-500 */
+        }
+        .btn-secondary:hover {
+            background-color: #4B5563; /* Gray-600 */
+        }
+        #result-card {
+            text-align: center;
+            padding: 2rem;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #1F2937;
+        }
+        .checkbox {
+            height: 1rem;
+            width: 1rem;
+            margin-right: 0.5rem;
+            border-radius: 0.25rem;
+            border-color: #D1D5DB;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-lg p-4">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Insulin Titration Calculator</h1>
+            <p class="text-gray-600 mt-2">Based on NICE-SUGAR Protocol</p>
+        </header>
+
+        <!-- Target Glucose Range Info -->
+        <div class="card bg-blue-50 border border-blue-200">
+             <h2 class="text-xl font-semibold text-blue-800 text-center">Target Glucose: 140-180 mg/dL</h2>
+        </div>
+
+        <!-- Input Card -->
+        <div class="card">
+            <div class="mb-4">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="initiateInfusion" class="checkbox">
+                    Initiate New Infusion? (Check for Bolus/Initial Rate)
+                </label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="currentGlucose" class="label">Current Glucose (mg/dL)</label>
+                    <input type="number" id="currentGlucose" class="input-field" placeholder="e.g., 350" required>
+                </div>
+                <div>
+                    <label for="currentRate" class="label">Current Infusion (U/hr)</label>
+                    <input type="number" id="currentRate" class="input-field" placeholder="e.g., 3.0" required>
+                </div>
+                <div>
+                    <label for="previousGlucose" class="label">Previous Glucose (mg/dL)</label>
+                    <input type="number" id="previousGlucose" class="input-field" placeholder="Optional">
+                </div>
+                <div>
+                    <label for="weight" class="label">Weight (kg)</label>
+                    <input type="number" id="weight" class="input-field" placeholder="Optional">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-between space-x-4">
+                <button id="calculateBtn" class="btn btn-primary w-full">Calculate</button>
+                <button id="resetBtn" class="btn btn-secondary w-1/3">Reset</button>
+            </div>
+        </div>
+
+        <!-- Output Card -->
+        <div id="result-container" class="hidden">
+            <div id="result-card" class="card">
+                 <div id="bolus-section" class="hidden border-b-2 border-dashed border-gray-300 mb-4 pb-4">
+                    <h4 class="text-lg font-semibold text-purple-800">Recommended IV Bolus</h4>
+                    <p class="text-4xl font-bold text-purple-600" id="bolus-dose"></p>
+                    <p class="text-md text-gray-600">One-Time Dose</p>
+                </div>
+                <h3 id="result-status" class="text-2xl font-bold mb-2"></h3>
+                <p class="text-5xl font-extrabold text-gray-800 mb-2" id="new-rate"></p>
+                <p class="text-lg text-gray-600 mb-4" id="rate-unit">Units/Hour</p>
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <p class="text-md font-medium text-gray-700" id="rate-change"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Information -->
+        <footer class="text-center text-xs text-gray-500 mt-4 px-4">
+            <p class="mb-2"><span class="font-bold">Disclaimer:</span> This tool is for informational purposes and is not a substitute for clinical judgment and institutional protocols. All calculations must be verified by a qualified healthcare professional.</p>
+            <p class="font-semibold text-gray-600">Developed by: Dr. Raghavendra Deshpande</p>
+            <p class="text-gray-600">ICU Consultant, Critical Care Medicine, Manipal Hospitals Sarjapur Road</p>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- DOM Element Selection ---
+        const initiateInfusionEl = document.getElementById('initiateInfusion');
+        const currentGlucoseEl = document.getElementById('currentGlucose');
+        const currentRateEl = document.getElementById('currentRate');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultContainer = document.getElementById('result-container');
+        const resultCard = document.getElementById('result-card');
+        const bolusSection = document.getElementById('bolus-section');
+        const bolusDose = document.getElementById('bolus-dose');
+        const resultStatus = document.getElementById('result-status');
+        const newRate = document.getElementById('new-rate');
+        const rateUnit = document.getElementById('rate-unit');
+        const rateChange = document.getElementById('rate-change');
+        
+        // --- Event Listeners ---
+        calculateBtn.addEventListener('click', handleCalculation);
+        resetBtn.addEventListener('click', handleReset);
+        initiateInfusionEl.addEventListener('change', (e) => {
+            // If initiating, current rate should be 0
+            currentRateEl.value = e.target.checked ? '0' : '';
+            currentRateEl.disabled = e.target.checked;
+        });
+
+        /**
+         * Main function to handle the calculation process.
+         */
+        function handleCalculation() {
+            const isInitiation = initiateInfusionEl.checked;
+            const currentGlucose = parseFloat(currentGlucoseEl.value);
+            let currentRate = parseFloat(currentRateEl.value);
+
+            if (isNaN(currentGlucose)) {
+                alert("Please enter a valid Current Glucose value.");
+                return;
+            }
+            if (isInitiation) {
+                currentRate = 0;
+            }
+             if (isNaN(currentRate) || currentRate < 0) {
+                alert("Please enter a valid Current Infusion Rate. Rate cannot be negative.");
+                return;
+            }
+
+            const result = calculateTitration(currentGlucose, currentRate, isInitiation);
+            displayResult(result, currentRate);
+        }
+
+        /**
+         * Resets all input fields and hides the result card.
+         */
+        function handleReset() {
+            initiateInfusionEl.checked = false;
+            currentGlucoseEl.value = '';
+            currentRateEl.value = '';
+            currentRateEl.disabled = false;
+            document.getElementById('previousGlucose').value = '';
+            document.getElementById('weight').value = '';
+            resultContainer.classList.add('hidden');
+        }
+
+        /**
+         * Calculates the new insulin rate and bolus (if applicable).
+         * @param {number} glucose - The patient's current blood glucose in mg/dL.
+         * @param {number} rate - The current insulin infusion rate in U/hr.
+         * @param {boolean} isInitiation - True if this is a new infusion.
+         * @returns {object} An object with the calculation results.
+         */
+        function calculateTitration(glucose, rate, isInitiation) {
+            // Initiation Logic
+            if (isInitiation) {
+                if (glucose < 180) {
+                     return { bolus: 0, newRate: 0, status: 'Initiation: Below Threshold' };
+                }
+                const initialDose = Math.round((glucose / 100) * 2) / 2; // Round to nearest 0.5
+                return { bolus: initialDose, newRate: initialDose, status: 'Initiation' };
+            }
+
+            // Titration Logic (NICE-SUGAR based)
+            if (glucose < 70) {
+                return { newRate: 0, status: 'Hypoglycemia Alert' };
+            } else if (glucose <= 109) {
+                return { newRate: 0, status: 'Low: Stop Infusion' };
+            } else if (glucose <= 139) {
+                const newRate = Math.max(0, rate / 2);
+                return { newRate: newRate, status: 'Below Target' };
+            } else if (glucose <= 180) {
+                return { newRate: rate, status: 'In Target Range' };
+            } else if (glucose <= 250) {
+                return { newRate: rate + 1, status: 'Above Target' };
+            } else { // glucose > 250
+                return { newRate: rate + 2, status: 'High' };
+            }
+        }
+        
+        /**
+         * Displays the calculated result in the UI.
+         */
+        function displayResult(result, oldRate) {
+             const change = result.newRate - oldRate;
+            
+            // Handle bolus display
+            if (result.bolus !== undefined && result.bolus > 0) {
+                bolusDose.textContent = `${result.bolus.toFixed(1)} Units`;
+                bolusSection.classList.remove('hidden');
+            } else {
+                bolusSection.classList.add('hidden');
+            }
+
+            // Set main values
+            resultStatus.textContent = result.status.startsWith('Initiation') ? 'Initial Rate' : result.status;
+            newRate.textContent = result.newRate.toFixed(1);
+
+            // Determine change description
+            if (result.status === 'Initiation') {
+                rateChange.textContent = "Start infusion at calculated rate after giving bolus.";
+            } else if (result.status === 'Initiation: Below Threshold'){
+                 rateChange.textContent = "Glucose is below 180 mg/dL. Do not start infusion. Monitor glucose.";
+            } else if (result.status === 'Hypoglycemia Alert') {
+                 rateChange.textContent = "STOP INFUSION. Treat for hypoglycemia per protocol.";
+            } else if (result.status === 'Low: Stop Infusion') {
+                 rateChange.textContent = "Stop infusion. Recheck glucose in 1 hour.";
+            } else if (change > 0) {
+                rateChange.textContent = `Increase rate by ${change.toFixed(1)} U/hr (from ${oldRate.toFixed(1)})`;
+            } else if (change < 0) {
+                rateChange.textContent = `Decrease rate by ${Math.abs(change).toFixed(1)} U/hr (from ${oldRate.toFixed(1)})`;
+            } else {
+                rateChange.textContent = "No change in infusion rate.";
+            }
+
+            // Set color-coding based on status
+            resultCard.className = 'card text-center p-8'; // Reset classes
+            switch(result.status) {
+                case 'Initiation':
+                    resultCard.classList.add('bg-purple-50', 'border', 'border-purple-300');
+                    resultStatus.classList.add('text-purple-700');
+                    newRate.classList.add('text-purple-700');
+                    break;
+                case 'Hypoglycemia Alert':
+                    resultCard.classList.add('bg-red-100', 'border', 'border-red-400');
+                    resultStatus.classList.add('text-red-700');
+                    newRate.classList.add('text-red-700');
+                    break;
+                case 'Low: Stop Infusion':
+                case 'Initiation: Below Threshold':
+                    resultCard.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                    resultStatus.classList.add('text-yellow-700');
+                    newRate.classList.add('text-yellow-700');
+                    break;
+                case 'In Target Range':
+                    resultCard.classList.add('bg-green-100', 'border', 'border-green-400');
+                    resultStatus.classList.add('text-green-700');
+                    newRate.classList.add('text-green-700');
+                    break;
+                default: // Above Target, High, Below Target
+                    resultCard.classList.add('bg-orange-100', 'border', 'border-orange-400');
+                    resultStatus.classList.add('text-orange-700');
+                    newRate.classList.add('text-orange-700');
+            }
+
+            // Show the result card
+            resultContainer.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
